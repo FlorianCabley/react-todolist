@@ -1,0 +1,16 @@
+.todo-list-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 8px;
+}
+
+.todo-list-edit-add {
+    display: flex;
+    gap: 16px;
+}
+
+.todo-list-edit-columns {
+    display: flex;
+    gap: 16px;
+}
