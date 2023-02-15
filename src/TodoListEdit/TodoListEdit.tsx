@@ -1,103 +1,145 @@
 import React, { useState } from 'react';
+import { Button, Input, List, Select } from 'antd';
 import './ToDoListEdit.css';
+import { CloseOutlined } from '@ant-design/icons';
+import './Column/Column.tsx'
+import './Item/Item.tsx'
+import './AddColumn/AddColumn.tsx'
+import './AddItem/AddItems.tsx'
 
-interface ListItem {
+interface Column {
+    value: string;
+    label: string;
+}
+
+interface Item {
     id: string;
+    columnId: string;
     label: string;
 }
 
 const TodoListEdit = () => {
-    const [todo, setTodo] = useState<ListItem[]>([]);
-    const [inProgress, setInProgress] = useState<ListItem[]>([]);
-    const [done, setDone] = useState<ListItem[]>([]);
+    const [columns, setColumns] = useState<Column[]>([]);
+    const [items, setItems] = useState<Item[]>([]);
     const [newItemName, setNewItemName] = useState<string>('');
-    const [newItemCategory, setNewItemCategory] = useState<string>('todo');
+    const [newColumnName, setColumnName] = useState<string>();
+    const [newItemColumn, setNewItemColumn] = useState<string>();
 
     const randomId = () => (Math.random() + 1).toString(36).substring(7);
 
-    const handleOnNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleOnItemNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setNewItemName(e.target.value);
     };
 
-    const handleOnCategoryChange = (
-        e: React.ChangeEvent<HTMLSelectElement>
+    const handleOnColumnNameChange = (
+        e: React.ChangeEvent<HTMLInputElement>
     ) => {
-        setNewItemCategory(e.target.value);
+        setColumnName(e.target.value);
     };
 
-    const handleOnClick = () => {
-        const newItem = {
-            id: randomId(),
-            label: newItemName,
-        };
+    const handleOnCategoryChange = (newValue: string) => {
+        setNewItemColumn(newValue);
+    };
 
-        switch (newItemCategory) {
-            case 'todo':
-                setTodo([...todo, newItem]);
-                break;
-            case 'inProgress':
-                setInProgress([...inProgress, newItem]);
-                break;
-            case 'done':
-                setDone([...done, newItem]);
-                break;
+    const handleOnClickNewColumn = () => {
+        if (newColumnName) {
+            const newColumn = {
+                value: randomId(),
+                label: newColumnName,
+            };
+
+            setColumns([...columns, newColumn]);
+            setColumnName(undefined);
         }
-
-        setNewItemName('');
-        setNewItemCategory('todo');
     };
 
-    const deleteTask = () => {
-        
-    }
+    const handleOnClickNewItem = () => {
+        if (newItemColumn) {
+            const newItem = {
+                id: randomId(),
+                label: newItemName,
+                columnId: newItemColumn,
+            };
+
+            setItems([...items, newItem]);
+
+            setNewItemName('');
+            setNewItemColumn(undefined);
+        }
+    };
+
+    const getColumnItems = (columnIdSelected: string) => {
+        return items.filter(({ columnId }) => columnId === columnIdSelected);
+    };
+
+    const handleOnDeleteItem = (idToRemove: string) => {
+        setItems(items.filter(({ id }) => id !== idToRemove));
+    };
 
     return (
         <div className="todo-list-edit">
-            <div className="todo-list-edit-add">
-                <input onChange={handleOnNameChange} value={newItemName} />
-                <select
-                    onChange={handleOnCategoryChange}
-                    value={newItemCategory}
+            <div className="todo-list-edit-add-column">
+                <Input
+                    placeholder="Column name"
+                    onChange={handleOnColumnNameChange}
+                    value={newColumnName}
+                />
+
+                <Button
+                    disabled={!newColumnName?.length}
+                    onClick={handleOnClickNewColumn}
                 >
-                    <option value="todo">To do</option>
-                    <option value="inProgress">In progress</option>
-                    <option value="done">Done</option>
-                </select>
-                <button disabled={!newItemName.length} onClick={handleOnClick}>
-                    Add to list
-                </button>
+                    Add column
+                </Button>
+            </div>
+
+            <div className="todo-list-edit-add-item">
+                <Input
+                    placeholder="Item name"
+                    onChange={handleOnItemNameChange}
+                    value={newItemName}
+                />
+
+                <Select
+                    placeholder="Select column"
+                    onChange={handleOnCategoryChange}
+                    value={newItemColumn}
+                    options={columns}
+                />
+
+                <Button
+                    disabled={!newItemName?.length || !newItemColumn}
+                    onClick={handleOnClickNewItem}
+                >
+                    Add Item
+                </Button>
             </div>
 
             <div className="todo-list-edit-columns">
-                <div>
-                    <span>To do</span>
-                    <ul>
-                        {todo.map(({ id, label }) => (
-                            <li key={id}>{label}</li>
-                        ))}
-                        <button onChange={deleteTask}>X</button>
-                    </ul>
-                </div>
+                {columns.map(({ value, label }) => {
+                    const columnItems = getColumnItems(value);
 
-                <div>
-                    <span>In progress</span>
-                    <ul>
-                        {inProgress.map(({ id, label }) => (
-                            <li key={id}>{label}</li>
-                        ))}
-                        <button onChange={deleteTask}>X</button>
-                    </ul>
-                </div>
-
-                <div>
-                    <span>Done</span>
-                    <ul>
-                        {done.map(({ id, label }) => (
-                            <li key={id}>{label}</li>
-                        ))}
-                        <button onChange={deleteTask}>X</button>
-                    </ul>
-                </div>
+                    return (
+                        <List
+                            className="todo-list-edit-column"
+                            key={value}
+                            header={<div>{label}</div>}
+                            dataSource={columnItems}
+                            renderItem={({ label, id }) => (
+                                <List.Item className="todo-list-edit-item">
+                                    {label}
+                                    <Button
+                                        type="primary"
+                                        danger
+                                        size="small"
+                                        icon={<CloseOutlined />}
+                                        onClick={() => handleOnDeleteItem(id)}
+                                    />
+                                </List.Item>
+                            )}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
