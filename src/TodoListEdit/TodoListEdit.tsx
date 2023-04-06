@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { Button, Input, List, Select } from 'antd';
-import './ToDoListEdit.css';
-import { CloseOutlined } from '@ant-design/icons';
-import './Column/Column.tsx'
-import './Item/Item.tsx'
-import './AddColumn/AddColumn.tsx'
-import './AddItem/AddItems.tsx'
+import AddColumn from './AddColumn/AddColumn';
+import AddItem from './AddItem';
+import ColumnComp from './Column';
+import ColumnModal from './ColumnModal';
+import ItemModal from './ItemModal';
+import './TodoListEdit.css';
 
-interface Column {
+export interface Column {
     value: string;
     label: string;
 }
 
-interface Item {
+export interface Item {
     id: string;
     columnId: string;
     label: string;
@@ -21,51 +20,31 @@ interface Item {
 const TodoListEdit = () => {
     const [columns, setColumns] = useState<Column[]>([]);
     const [items, setItems] = useState<Item[]>([]);
-    const [newItemName, setNewItemName] = useState<string>('');
-    const [newColumnName, setColumnName] = useState<string>();
-    const [newItemColumn, setNewItemColumn] = useState<string>();
+    const [itemModal, setItemModal] = useState<Item>();
+    const [columnModal, setColumnModal] = useState<Column>();
 
     const randomId = () => (Math.random() + 1).toString(36).substring(7);
 
-    const handleOnItemNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setNewItemName(e.target.value);
+    const handleOnClickNewColumn = (newColumnName: string) => {
+        const newColumn = {
+            value: randomId(),
+            label: newColumnName,
+        };
+
+        setColumns([...columns, newColumn]);
     };
 
-    const handleOnColumnNameChange = (
-        e: React.ChangeEvent<HTMLInputElement>
+    const handleOnClickNewItem = (
+        newItemName: string,
+        newItemColumn: string
     ) => {
-        setColumnName(e.target.value);
-    };
+        const newItem = {
+            id: randomId(),
+            label: newItemName,
+            columnId: newItemColumn,
+        };
 
-    const handleOnCategoryChange = (newValue: string) => {
-        setNewItemColumn(newValue);
-    };
-
-    const handleOnClickNewColumn = () => {
-        if (newColumnName) {
-            const newColumn = {
-                value: randomId(),
-                label: newColumnName,
-            };
-
-            setColumns([...columns, newColumn]);
-            setColumnName(undefined);
-        }
-    };
-
-    const handleOnClickNewItem = () => {
-        if (newItemColumn) {
-            const newItem = {
-                id: randomId(),
-                label: newItemName,
-                columnId: newItemColumn,
-            };
-
-            setItems([...items, newItem]);
-
-            setNewItemName('');
-            setNewItemColumn(undefined);
-        }
+        setItems([...items, newItem]);
     };
 
     const getColumnItems = (columnIdSelected: string) => {
@@ -76,71 +55,86 @@ const TodoListEdit = () => {
         setItems(items.filter(({ id }) => id !== idToRemove));
     };
 
+    const handleOnDeleteColumn = (idToRemove: string) => {
+        setColumns(columns.filter(({ value }) => value !== idToRemove));
+        setItems(items.filter(({ columnId }) => columnId !== idToRemove));
+    };
+
+    const handleOnEditItem = (idItem: string) => {
+        const item = items.find(({ id }) => id === idItem);
+
+        if (item) {
+            setItemModal(item);
+        }
+    };
+
+    const handleOnEditColumn = (idColumn: string) => {
+        const column = columns.find(({ value }) => value === idColumn);
+
+        if (column) {
+            setColumnModal(column);
+        }
+    };
+
+    const handleOnCloseItem = () => {
+        setItemModal(undefined);
+    };
+
+    const handleOnCloseColumn = () => {
+        setColumnModal(undefined);
+    };
+
+    const handleOnSaveItem = (newItem: Item) => {
+        setItems(
+            items.map((item) => (item.id === newItem.id ? newItem : item))
+        );
+        handleOnCloseItem();
+    };
+
+    const handleOnSaveColumn = (newColumn: Column) => {
+        setColumns(
+            columns.map((column) =>
+                column.value === newColumn.value ? newColumn : column
+            )
+        );
+        handleOnCloseColumn();
+    };
+
     return (
         <div className="todo-list-edit">
-            <div className="todo-list-edit-add-column">
-                <Input
-                    placeholder="Column name"
-                    onChange={handleOnColumnNameChange}
-                    value={newColumnName}
-                />
-
-                <Button
-                    disabled={!newColumnName?.length}
-                    onClick={handleOnClickNewColumn}
-                >
-                    Add column
-                </Button>
-            </div>
-
-            <div className="todo-list-edit-add-item">
-                <Input
-                    placeholder="Item name"
-                    onChange={handleOnItemNameChange}
-                    value={newItemName}
-                />
-
-                <Select
-                    placeholder="Select column"
-                    onChange={handleOnCategoryChange}
-                    value={newItemColumn}
-                    options={columns}
-                />
-
-                <Button
-                    disabled={!newItemName?.length || !newItemColumn}
-                    onClick={handleOnClickNewItem}
-                >
-                    Add Item
-                </Button>
-            </div>
+            <AddColumn onClickNewColumn={handleOnClickNewColumn} />
+            <AddItem onClickNewItem={handleOnClickNewItem} columns={columns} />
 
             <div className="todo-list-edit-columns">
                 {columns.map(({ value, label }) => {
                     const columnItems = getColumnItems(value);
 
                     return (
-                        <List
-                            className="todo-list-edit-column"
-                            key={value}
-                            header={<div>{label}</div>}
-                            dataSource={columnItems}
-                            renderItem={({ label, id }) => (
-                                <List.Item className="todo-list-edit-item">
-                                    {label}
-                                    <Button
-                                        type="primary"
-                                        danger
-                                        size="small"
-                                        icon={<CloseOutlined />}
-                                        onClick={() => handleOnDeleteItem(id)}
-                                    />
-                                </List.Item>
-                            )}
+                        <ColumnComp
+                            value={value}
+                            label={label}
+                            columnItems={columnItems}
+                            onDeleteItem={handleOnDeleteItem}
+                            onEditItem={handleOnEditItem}
+                            onEditColumn={handleOnEditColumn}
+                            onDeleteColumn={handleOnDeleteColumn}
                         />
                     );
                 })}
             </div>
+
+            <ItemModal
+                item={itemModal}
+                onCloseItem={handleOnCloseItem}
+                onSaveItem={handleOnSaveItem}
+                columns={columns}
+            />
+
+            <ColumnModal
+                column={columnModal}
+                onCloseColumn={handleOnCloseColumn}
+                onSaveColumn={handleOnSaveColumn}
+            />
         </div>
     );
 };

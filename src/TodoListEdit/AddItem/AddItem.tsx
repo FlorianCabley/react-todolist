@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Button, Input, Select } from 'antd';
-import { useSelector, useDispatch } from 'react-redux';
-import { addItem, State } from '../Slices/columnsSlice';
+import { Column } from '../TodoListEdit';
 
-const AddItem = () => {
-    const dispatch = useDispatch();
-    const columns = useSelector((state: State) => state.columnsStore.columns);
+interface AddItemInterface {
+    onClickNewItem(newItemName: string, newItemColumn: string): void;
+    columns: Column[];
+}
+
+const AddItem = ({ onClickNewItem, columns }: AddItemInterface) => {
     const [newItemName, setNewItemName] = useState<string>('');
     const [newItemColumn, setNewItemColumn] = useState<string>();
 
@@ -18,20 +20,14 @@ const AddItem = () => {
     };
 
     const handleOnClickNewItem = () => {
-        const columnIndex = columns.findIndex(
-            ({ value }) => value === newItemColumn
-        );
+        onClickNewItem(newItemName, newItemColumn as string);
 
-        if (columnIndex !== -1) {
-            dispatch(addItem({ newItemName, columnIndex }));
-
-            setNewItemName('');
-            setNewItemColumn(undefined);
-        }
+        setNewItemName('');
+        setNewItemColumn(undefined);
     };
 
     return (
-        <div className="todo-list-redux-add-item">
+        <div className="todo-list-edit-add-item">
             <Input
                 placeholder="Item name"
                 onChange={handleOnItemNameChange}

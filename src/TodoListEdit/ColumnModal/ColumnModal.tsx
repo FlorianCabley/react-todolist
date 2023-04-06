@@ -1,13 +1,18 @@
 import { Input, Modal } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { setEditColumn, State, updateColumn } from '../Slices/columnsSlice';
+import { Column } from '../TodoListEdit';
 
-const ColumnModal = () => {
-    const dispatch = useDispatch();
-    const column = useSelector(
-        (state: State) => state.columnsStore.columnModal
-    );
+interface ColumnModalInterface {
+    column: Column | undefined;
+    onCloseColumn(): void;
+    onSaveColumn(newColumn: Column): void;
+}
+
+const ColumnModal = ({
+    column,
+    onCloseColumn,
+    onSaveColumn,
+}: ColumnModalInterface) => {
     const [newColumnName, setNewColumnName] = useState<string>();
 
     useEffect(() => {
@@ -16,19 +21,15 @@ const ColumnModal = () => {
 
     const handleOnSave = () => {
         if (newColumnName && column) {
-            dispatch(
-                updateColumn({ value: column.value, label: newColumnName })
-            );
+            onSaveColumn({
+                ...column,
+                label: newColumnName,
+            });
         }
-        handleOnCloseColumn();
     };
 
     const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setNewColumnName(e.target.value);
-    };
-
-    const handleOnCloseColumn = () => {
-        dispatch(setEditColumn(undefined));
     };
 
     return (
@@ -37,8 +38,8 @@ const ColumnModal = () => {
             open={column !== undefined}
             onOk={handleOnSave}
             okText="Save"
-            onCancel={handleOnCloseColumn}
-            className="todo-list-redux-Column-modal"
+            onCancel={onCloseColumn}
+            className="todo-list-edit-Column-modal"
         >
             <Input value={newColumnName} onChange={handleOnChange} />
         </Modal>

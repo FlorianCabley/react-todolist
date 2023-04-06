@@ -1,151 +1,75 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
+import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import AddColumn from './AddColumn/AddColumn';
 import AddItem from './AddItem';
 import ColumnComp from './Column';
 import ColumnModal from './ColumnModal';
 import ItemModal from './ItemModal';
-import store from './store';
-import { Provider, useDispatch, useSelector } from 'react-redux';
+import { onDragEnd, State } from './Slices/columnsSlice';
 import './TodoListRedux.css';
-
-root.render(
-    <Provider store={store}>
-         
-    </Provider>
-)
-
 
 export interface Column {
     value: string;
     label: string;
+    items: Item[];
 }
 
 export interface Item {
     id: string;
-    columnId: string;
     label: string;
 }
 
-const TodoListRedux = () => {
-    const [columns, setColumns] = useState<Column[]>([]);
-    const [items, setItems] = useState<Item[]>([]);
-    const [itemModal, setItemModal] = useState<Item>();
-    const [columnModal, setColumnModal] = useState<Column>();
+const getListStyle = (isDraggingOver: boolean) => ({
+    background: isDraggingOver ? 'lightblue' : 'lightgrey',
+});
 
-    const randomId = () => (Math.random() + 1).toString(36).substring(7);
+const TodoListEdit = () => {
+    const dispatch = useDispatch();
+    const columns = useSelector((state: State) => state.columnsStore.columns);
 
-    const handleOnClickNewColumn = (newColumnName: string) => {
-        const newColumn = {
-            value: randomId(),
-            label: newColumnName,
-        };
-
-        setColumns([...columns, newColumn]);
-    };
-
-    const handleOnClickNewItem = (
-        newItemName: string,
-        newItemColumn: string
-    ) => {
-        const newItem = {
-            id: randomId(),
-            label: newItemName,
-            columnId: newItemColumn,
-        };
-
-        setItems([...items, newItem]);
-    };
-
-    const getColumnItems = (columnIdSelected: string) => {
-        return items.filter(({ columnId }) => columnId === columnIdSelected);
-    };
-
-    const handleOnDeleteItem = (idToRemove: string) => {
-        setItems(items.filter(({ id }) => id !== idToRemove));
-    };
-
-    const handleOnDeleteColumn = (idToRemove: string) => {
-        setColumns(columns.filter(({ value }) => value !== idToRemove));
-        setItems(items.filter(({ columnId }) => columnId !== idToRemove));
-    };
-
-    const handleOnEditItem = (idItem: string) => {
-        const item = items.find(({ id }) => id === idItem);
-
-        if (item) {
-            setItemModal(item);
-        }
-    };
-
-    const handleOnEditColumn = (idColumn: string) => {
-        const column = columns.find(({ value }) => value === idColumn);
-
-        if (column) {
-            setColumnModal(column);
-        }
-    };
-
-    const handleOnCloseItem = () => {
-        setItemModal(undefined);
-    };
-
-    const handleOnCloseColumn = () => {
-        setColumnModal(undefined);
-    };
-
-    const handleOnSaveItem = (newItem: Item) => {
-        setItems(
-            items.map((item) => (item.id === newItem.id ? newItem : item))
-        );
-        handleOnCloseItem();
-    };
-
-    const handleOnSaveColumn = (newColumn: Column) => {
-        setColumns(
-            columns.map((column) =>
-                column.value === newColumn.value ? newColumn : column
-            )
-        );
-        handleOnCloseColumn();
+    const handleOnDragEnd = (result: DropResult) => {
+        dispatch(onDragEnd(result));
     };
 
     return (
-        <div className="todo-list-edit">
-            <AddColumn onClickNewColumn={handleOnClickNewColumn} />
-            <AddItem onClickNewItem={handleOnClickNewItem} columns={columns} />
+        <div className="todo-list-redux">
+            <AddColumn />
+            <AddItem />
 
-            <div className="todo-list-edit-columns">
-                {columns.map(({ value, label }) => {
-                    const columnItems = getColumnItems(value);
-
-                    return (
-                        <ColumnComp
-                            value={value}
-                            label={label}
-                            columnItems={columnItems}
-                            onDeleteItem={handleOnDeleteItem}
-                            onEditItem={handleOnEditItem}
-                            onEditColumn={handleOnEditColumn}
-                            onDeleteColumn={handleOnDeleteColumn}
-                        />
-                    );
-                })}
+            <div className="todo-list-redux-columns">
+                <DragDropContext onDragEnd={handleOnDragEnd}>
+                    {columns.map(({ value, label, items }, index) => (
+                        <Droppable key={index} droppableId={`${index}`}>
+                            {(provided, snapshot) => (
+                                <div
+                                    className="todo-list-redux-column"
+                                    ref={provided.innerRef}
+                                    style={getListStyle(
+                                        snapshot.isDraggingOver
+                                    )}
+                                    {...provided.droppableProps}
+                                >
+                                    <ColumnComp
+                                        value={value}
+                                        label={label}
+                                        index={index}
+                                        columnItems={items}
+                                    />
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    ))}
+                </DragDropContext>
             </div>
 
-            <ItemModal
-                item={itemModal}
-                onCloseItem={handleOnCloseItem}
-                onSaveItem={handleOnSaveItem}
-                columns={columns}
-            />
+            <ItemModal />
 
-            <ColumnModal
-                column={columnModal}
-                onCloseColumn={handleOnCloseColumn}
-                onSaveColumn={handleOnSaveColumn}
-            />
+            <ColumnModal />
         </div>
     );
 };
 
-export default TodoListRedux;
+export default TodoListEdit;

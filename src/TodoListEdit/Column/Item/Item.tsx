@@ -11,9 +11,9 @@ interface ItemInterface {
 
 const Item = ({ label, id, onDeleteItem, onEditItem }: ItemInterface) => {
     return (
-        <List.Item>
+        <List.Item className="todo-list-edit-item">
             {label}
-            <div className="todo-list-redux-item-action">
+            <div className="todo-list-edit-item-action">
                 <Button
                     type="primary"
                     size="small"
